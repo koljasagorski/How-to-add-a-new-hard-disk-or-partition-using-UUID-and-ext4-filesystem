@@ -1,0 +1,66 @@
+Compatible releases
+squeeze
+wheezy
+Adding a additional hard disk to your workstation or server is easy and often required. Here’s we’ll step through the process of identifing the newly attached drive, prepare and mount it by referencing UUID which is a preferred method today.
+
+If you have just added a virtual disk to a virtual machine, make sure you restart the virtual machine before mounting the new disk.
+
+1. Figure out the device name for the new device
+
+fdisk -l
+This will give you output similar to this:
+
+Disk /dev/sda: 17.2 GB, 17179869184 bytes
+255 heads, 63 sectors/track, 2088 cylinders, total 33554432 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x000299d1
+ 
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *        2048    32088063    16043008   83  Linux
+/dev/sda2        32090110    33552383      731137    5  Extended
+/dev/sda5        32090112    33552383      731136   82  Linux swap / Solaris
+ 
+Disk /dev/sdb: 17.2 GB, 17179869184 bytes
+255 heads, 63 sectors/track, 2088 cylinders, total 33554432 sectors
+Units = sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x00000000
+ 
+Disk /dev/sdb doesn't contain a valid partition table
+2. Next we’ll partion the new disk using the following command:
+
+cfdisk /dev/sdb
+ 
+> New -> Primary -> Specify size in MB
+> Write -> yes
+> Quit
+3. Format the new disk using the ext4 filessystem
+
+mkfs.ext4 /dev/sdb1
+4. You need to create a new directory where the disk will be mounted in the filesystem
+
+mkdir /disk2
+You can name the folder whatever your want and place it in a subfolder of another mounting point, for example /var/disk2
+
+5. It’s preferred to use the device UUID (Universally Unique Identifier) instead of directly linking to the device path because while UUID always stays the same, the device path may change. This is how we find the UUID:
+
+blkid
+Which shows a list of all partitions and the assigned UUID. The list should look similar to this:
+
+/dev/sda5: UUID="180cab2a-300a-4e3d-8c8e-0e1df46b9bf7" TYPE="swap"
+/dev/sda1: UUID="cd0c7b2c-bf50-4557-bc01-0048764a41d2" TYPE="ext4"
+/dev/sdb1: UUID="359d90df-f17a-42f6-ab13-df13bf356de7" TYPE="ext4"
+6. Add the new disk/partition to fstab to automatically mount it on boot
+
+echo "UUID=359d90df-f17a-42f6-ab13-df13bf356de7 /disk2 ext4  errors=remount-ro 0 1" >> /etc/fstab
+Replace the UDID value to the UDID displayed in step 5 for the new disk and replace /disk2 with the path where you want to mount the disk in the filesystem as specified in step 4
+
+7. Manually mount the disk (you can also reboot the machine and it will be automatically mounted)
+
+mount /disk2
+/disk2 is the directory created in step 4
+
+Now your new hard disk is mounted and ready to use.
